@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10141d">
+<title>VAG Part Scanner</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#0b0f16;--panel:#151c27;--panel2:#1d2735;--line:#2b3748;--text:#f4f7fb;--muted:#9eacbf;--blue:#60a5fa;--green:#34d399}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#101827,#090c12 55%);color:var(--text);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+main{max-width:760px;margin:auto;padding:22px 16px 50px}.top{display:flex;align-items:center;gap:12px;margin:8px 0 20px}.logo{width:44px;height:44px;border-radius:13px;background:#26364b;display:grid;place-items:center;font-weight:900;color:#9cc8ff;font-size:19px}.top h1{font-size:22px;margin:0}.top p{margin:3px 0 0;color:var(--muted);font-size:13px}
+.card{background:rgba(21,28,39,.96);border:1px solid var(--line);border-radius:18px;padding:17px;margin:14px 0;box-shadow:0 10px 30px #0003}
+h2{font-size:17px;margin:0 0 13px}label{display:block;color:var(--muted);font-size:13px;margin:12px 0 7px}
+input{width:100%;background:#0c121c;border:1px solid #354358;color:white;border-radius:12px;padding:14px;font-size:17px;outline:none}input:focus{border-color:var(--blue)}
+button,.linkbtn{border:0;border-radius:12px;padding:13px 15px;background:#2563eb;color:white;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px}
+button.secondary,.linkbtn.secondary{background:#293548;color:#e6edf7;border:1px solid #3a4960}button.danger{background:#7f2934}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.actions>*{flex:1}
+#reader{width:100%;overflow:hidden;border-radius:13px;background:#080b10;min-height:70px}#reader video{border-radius:12px}.hint,.small{color:var(--muted);font-size:12px;line-height:1.5}.result{background:#0c1420;border:1px solid #304158;border-radius:14px;padding:14px;margin-top:13px}.part{font-size:23px;font-weight:800;letter-spacing:.4px;word-break:break-word}.pill{display:inline-block;background:#203b32;color:#8ce7bd;border-radius:20px;padding:5px 9px;font-size:11px;font-weight:700;margin-top:7px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.grid .linkbtn{width:100%;text-align:center}.statrow{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px;margin:8px 0}.bar{height:10px;background:#273244;border-radius:20px;overflow:hidden;display:flex;margin:10px 0}.vwbar{background:#60a5fa}.audbar{background:#f59e0b}.history{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #293547}.history:last-child{border:0}.history button{padding:8px 10px;min-height:34px;flex:0 0 auto}.empty{color:var(--muted);font-size:13px;padding:5px 0}
+footer{text-align:center;color:#748196;font-size:11px;padding:14px}
+@media(min-width:600px){main{padding-top:34px}.card{padding:20px}}
+</style>
+</head>
+<body>
+<main>
+<header class="top"><div class="logo">VAG</div><div><h1>VAG Part Scanner</h1><p>Scan a barcode · search parts · track applications</p></div></header>
+<section class="card">
+<h2>📷 Scan a part barcode</h2>
+<div id="reader"></div>
+<div class="actions"><button id="startBtn" onclick="startScan()">Start camera</button><button class="secondary" onclick="stopScan()">Stop camera</button></div>
+<p class="hint" id="cameraStatus">Allow camera access when Safari asks. Camera scanning requires HTTPS and a supported barcode.</p>
+</section>
+<section class="card">
+<h2>🔎 Part number lookup</h2>
+<label for="partInput">Enter or scan a part number</label>
+<input id="partInput" placeholder="e.g. 06K 103 495 AP" autocomplete="off" autocapitalize="characters">
+<div class="actions"><button onclick="lookup()">Search part</button><button class="secondary" onclick="clearInput()">Clear</button></div>
+<div id="lookupResult"></div>
+</section>
+<section class="card">
+<h2>📊 VW / Audi application split</h2>
+<p class="hint">Enter verified application counts from catalog results. The percentages are calculated from the counts you enter; this tool does not guess fitment.</p>
+<div class="grid">
+<div><label for="vwCount">Volkswagen applications</label><input id="vwCount" type="number" min="0" step="1" placeholder="0" oninput="calcSplit()"></div>
+<div><label for="audCount">Audi applications</label><input id="audCount" type="number" min="0" step="1" placeholder="0" oninput="calcSplit()"></div>
+</div>
+<div class="result"><div class="statrow"><span>Volkswagen</span><strong id="vwPct">0%</strong></div><div class="statrow"><span>Audi</span><strong id="audPct">0%</strong></div><div class="bar"><div class="vwbar" id="vwBar" style="width:0%"></div><div class="audbar" id="audBar" style="width:0%"></div></div><div class="statrow"><span>Total verified applications</span><strong id="totalCount">0</strong></div></div>
+</section>
+<section class="card">
+<h2>🕘 Recent scans</h2><div id="historyList" class="empty">No scans yet.</div><div class="actions"><button class="secondary" onclick="clearHistory()">Clear history</button></div>
+</section>
+<footer>Free lookup links use public search pages. Always verify part fitment by VIN and OE catalog before ordering.</footer>
+</main>
+<script>
+let scanner=null,scanning=false;
+const $=id=>document.getElementById(id);
+function cleanPart(v){return (v||'').trim().replace(/\s+/g,' ').toUpperCase()}
+function startScan(){
+ if(!window.Html5Qrcode){$('cameraStatus').textContent='Scanner library did not load. Check your internet connection and reload.';return}
+ if(scanning)return;
+ scanner=new Html5Qrcode('reader');
+ $('cameraStatus').textContent='Requesting camera access…';
+ scanner.start({facingMode:'environment'},{fps:12,qrbox:{width:260,height:150},aspectRatio:1.6},decoded=>{
+   $('partInput').value=cleanPart(decoded);stopScan();lookup();
+ },err=>{}).then(()=>{scanning=true;$('cameraStatus').textContent='Camera is active. Hold the barcode inside the scan frame.';}).catch(e=>{$('cameraStatus').textContent='Could not start camera: '+e+'. Open this page in Safari over HTTPS and allow camera access.';});
+}
+function stopScan(){if(scanner&&scanning){scanner.stop().then(()=>{scanning=false;scanner.clear();}).catch(()=>{scanning=false;});}else if(scanner){try{scanner.clear()}catch(e){}}}
+function lookup(){
+ const p=cleanPart($('partInput').value);if(!p){$('lookupResult').innerHTML='<p class="hint">Enter a part number first.</p>';return}
+ $('partInput').value=p;
+ const q=encodeURIComponent('"'+p+'"');
+ const links=[
+  ['Google — exact part','https://www.google.com/search?q='+q],
+  ['ECS Tuning','https://www.google.com/search?q=site%3Aecstuning.com+'+encodeURIComponent(p)],
+  ['UroTuning','https://www.google.com/search?q=site%3Aurotuning.com+'+encodeURIComponent(p)],
+  ['VW / Audi catalog search','https://www.google.com/search?q='+encodeURIComponent(p+' Volkswagen Audi OEM parts')],
+  ['Google Images','https://www.google.com/search?tbm=isch&q='+encodeURIComponent(p)]
+ ];
+ $('lookupResult').innerHTML='<div class="result"><div class="part">'+escapeHtml(p)+'</div><span class="pill">SEARCH LINKS READY</span><div class="grid" style="margin-top:13px">'+links.map(([name,url])=>'<a class="linkbtn secondary" target="_blank" rel="noopener" href="'+url+'">'+name+'</a>').join('')+'</div><p class="hint">These open free public search results. They are not live catalog verification or guaranteed fitment results.</p></div>';
+ saveHistory(p);
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function clearInput(){$('partInput').value='';$('lookupResult').innerHTML=''}
+function calcSplit(){
+ const v=Math.max(0,parseInt($('vwCount').value)||0),a=Math.max(0,parseInt($('audCount').value)||0),t=v+a;
+ const vp=t?Math.round(v/t*100):0,ap=t?100-vp:0;
+ $('vwPct').textContent=vp+'%';$('audPct').textContent=ap+'%';$('vwBar').style.width=vp+'%';$('audBar').style.width=ap+'%';$('totalCount').textContent=t;
+}
+function getHistory(){try{return JSON.parse(localStorage.getItem('vagScanHistory')||'[]')}catch(e){return []}}
+function saveHistory(p){let h=getHistory().filter(x=>x!==p);h.unshift(p);localStorage.setItem('vagScanHistory',JSON.stringify(h.slice(0,15)));renderHistory()}
+function renderHistory(){const h=getHistory();$('historyList').innerHTML=h.length?h.map(p=>'<div class="history"><strong>'+escapeHtml(p)+'</strong><button class="secondary" onclick="useHistory(\''+p.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">Use</button></div>').join(''):'<div class="empty">No scans yet.</div>'}
+function useHistory(p){$('partInput').value=p;lookup()}
+function clearHistory(){localStorage.removeItem('vagScanHistory');renderHistory()}
+$('partInput').addEventListener('keydown',e=>{if(e.key==='Enter')lookup()});
+renderHistory();
+</script>
+</body>
+</html>
