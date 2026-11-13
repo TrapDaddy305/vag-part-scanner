@@ -17,7 +17,7 @@ button,.linkbtn{border:0;border-radius:12px;padding:13px 15px;background:#2563eb
 button.secondary,.linkbtn.secondary{background:#293548;color:#e6edf7;border:1px solid #3a4960}button.danger{background:#7f2934}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.actions>*{flex:1}
 #reader{width:100%;overflow:hidden;border-radius:13px;background:#080b10;min-height:70px}#reader video{border-radius:12px;width:100%;max-height:420px;object-fit:cover}.hint,.small{color:var(--muted);font-size:12px;line-height:1.5}.result{background:#0c1420;border:1px solid #304158;border-radius:14px;padding:14px;margin-top:13px}.part{font-size:23px;font-weight:800;letter-spacing:.4px;word-break:break-word}.pill{display:inline-block;background:#203b32;color:#8ce7bd;border-radius:20px;padding:5px 9px;font-size:11px;font-weight:700;margin-top:7px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.grid .linkbtn{width:100%;text-align:center}.statrow{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px;margin:8px 0}.bar{height:10px;background:#273244;border-radius:20px;overflow:hidden;display:flex;margin:10px 0}.vwbar{background:#60a5fa}.audbar{background:#f59e0b}.history{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #293547}.history:last-child{border:0}.history button{padding:8px 10px;min-height:34px;flex:0 0 auto}.empty{color:var(--muted);font-size:13px;padding:5px 0}
-footer{text-align:center;color:#748196;font-size:11px;padding:14px}
+.catalog-embed{margin-top:13px;background:#0c1420;border:1px solid #304158;border-radius:14px;padding:12px;overflow:hidden}.embed-head{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;margin-bottom:9px}.embed-head a{font-size:12px;color:#93c5fd;text-decoration:none}.catalog-embed iframe{display:block;width:100%;height:390px;border:1px solid #354358;border-radius:10px;background:white;color-scheme:light}.catalog-embed .hint{margin:8px 2px 0}footer{text-align:center;color:#748196;font-size:11px;padding:14px}
 @media(min-width:600px){main{padding-top:34px}.card{padding:20px}}
 </style>
 </head>
@@ -41,9 +41,15 @@ footer{text-align:center;color:#748196;font-size:11px;padding:14px}
 <h2>📊 VW / Audi application split</h2>
 <p class="hint">Search both OEM catalogs for this exact part number. These stores can show product and fitment details when available, but they do not provide an accessible public feed of all matching vehicle applications. The app will not invent percentages from search-result counts.</p>
 <div class="result" id="catalogStatus"><div class="part">No part searched yet</div><p class="hint">Scan or enter a part number, then use the catalog search buttons below.</p></div>
-<div class="grid" style="margin-top:12px">
-<a class="linkbtn secondary" id="vwCatalogLink" href="https://vw.oempartsonline.com" target="_blank" rel="noopener">Search VW OEM catalog</a>
-<a class="linkbtn secondary" id="audCatalogLink" href="https://audi.oempartsonline.com" target="_blank" rel="noopener">Search Audi OEM catalog</a>
+<div class="catalog-embed">
+<div class="embed-head"><strong>Volkswagen catalog</strong><a id="vwCatalogLink" href="https://vw.oempartsonline.com" target="_blank" rel="noopener">Open separately ↗</a></div>
+<iframe id="vwCatalogFrame" title="Volkswagen OEM Parts Online search results" src="about:blank" loading="lazy"></iframe>
+<p class="hint">If the catalog refuses to display inside this app, use “Open separately”.</p>
+</div>
+<div class="catalog-embed">
+<div class="embed-head"><strong>Audi catalog</strong><a id="audCatalogLink" href="https://audi.oempartsonline.com" target="_blank" rel="noopener">Open separately ↗</a></div>
+<iframe id="audCatalogFrame" title="Audi OEM Parts Online search results" src="about:blank" loading="lazy"></iframe>
+<p class="hint">Some catalog websites block embedded viewing. This app will still try both searches automatically.</p>
 </div>
 <div class="statrow"><span>VW catalog coverage</span><strong>USA</strong></div>
 <div class="statrow"><span>Audi catalog coverage</span><strong>USA</strong></div>
@@ -131,6 +137,9 @@ function lookup(){
  const vwUrl='https://vw.oempartsonline.com/search?search_str='+encodeURIComponent(p);
  const audUrl='https://audi.oempartsonline.com/search?search_str='+encodeURIComponent(p);
  $('vwCatalogLink').href=vwUrl;$('audCatalogLink').href=audUrl;
+ // Load both OEM searches inside the app so the user can stay on this screen.
+ $('vwCatalogFrame').src=vwUrl;
+ $('audCatalogFrame').src=audUrl;
  $('catalogStatus').innerHTML='<div class="part">'+escapeHtml(p)+'</div><span class="pill">OEM CATALOG SEARCH READY</span><p class="hint">Open either catalog to inspect matching products and any published fitment details. Catalog results are not automatically counted as vehicle applications.</p>';
  const links=[
   ['VW OEM Parts Online',vwUrl],
