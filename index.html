@@ -39,12 +39,15 @@ footer{text-align:center;color:#748196;font-size:11px;padding:14px}
 </section>
 <section class="card">
 <h2>📊 VW / Audi application split</h2>
-<p class="hint">Automatic VW/Audi application totals require access to a parts-fitment catalog. This free version cannot retrieve those catalog records, so these percentages are calculated only from verified counts you enter below. Search links alone do not provide data back to the app.</p>
-<div class="grid">
-<div><label for="vwCount">Volkswagen applications</label><input id="vwCount" type="number" min="0" step="1" placeholder="0" oninput="calcSplit()"></div>
-<div><label for="audCount">Audi applications</label><input id="audCount" type="number" min="0" step="1" placeholder="0" oninput="calcSplit()"></div>
+<p class="hint">Search both OEM catalogs for this exact part number. These stores can show product and fitment details when available, but they do not provide an accessible public feed of all matching vehicle applications. The app will not invent percentages from search-result counts.</p>
+<div class="result" id="catalogStatus"><div class="part">No part searched yet</div><p class="hint">Scan or enter a part number, then use the catalog search buttons below.</p></div>
+<div class="grid" style="margin-top:12px">
+<a class="linkbtn secondary" id="vwCatalogLink" href="https://vw.oempartsonline.com" target="_blank" rel="noopener">Search VW OEM catalog</a>
+<a class="linkbtn secondary" id="audCatalogLink" href="https://audi.oempartsonline.com" target="_blank" rel="noopener">Search Audi OEM catalog</a>
 </div>
-<div class="result"><div class="statrow"><span>Volkswagen</span><strong id="vwPct">0%</strong></div><div class="statrow"><span>Audi</span><strong id="audPct">0%</strong></div><div class="bar"><div class="vwbar" id="vwBar" style="width:0%"></div><div class="audbar" id="audBar" style="width:0%"></div></div><div class="statrow"><span>Total verified applications</span><strong id="totalCount">0</strong></div></div>
+<div class="statrow"><span>VW catalog coverage</span><strong>USA</strong></div>
+<div class="statrow"><span>Audi catalog coverage</span><strong>USA</strong></div>
+<p class="hint">Percentages will remain unavailable until the catalogs expose verified vehicle-application records that can be retrieved automatically.</p>
 </section>
 <section class="card">
 <h2>🕘 Recent scans</h2><div id="historyList" class="empty">No scans yet.</div><div class="actions"><button class="secondary" onclick="clearHistory()">Clear history</button></div>
@@ -125,7 +128,13 @@ function lookup(){
  const p=cleanPart($('partInput').value);if(!p){$('lookupResult').innerHTML='<p class="hint">Enter a part number first.</p>';return}
  $('partInput').value=p;
  const q=encodeURIComponent('"'+p+'"');
+ const vwUrl='https://vw.oempartsonline.com/search?search_str='+encodeURIComponent(p);
+ const audUrl='https://audi.oempartsonline.com/search?search_str='+encodeURIComponent(p);
+ $('vwCatalogLink').href=vwUrl;$('audCatalogLink').href=audUrl;
+ $('catalogStatus').innerHTML='<div class="part">'+escapeHtml(p)+'</div><span class="pill">OEM CATALOG SEARCH READY</span><p class="hint">Open either catalog to inspect matching products and any published fitment details. Catalog results are not automatically counted as vehicle applications.</p>';
  const links=[
+  ['VW OEM Parts Online',vwUrl],
+  ['Audi OEM Parts Online',audUrl],
   ['Google — exact part','https://www.google.com/search?q='+q],
   ['ECS Tuning','https://www.google.com/search?q=site%3Aecstuning.com+'+encodeURIComponent(p)],
   ['UroTuning','https://www.google.com/search?q=site%3Aurotuning.com+'+encodeURIComponent(p)],
@@ -137,11 +146,6 @@ function lookup(){
 }
 function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function clearInput(){$('partInput').value='';$('lookupResult').innerHTML=''}
-function calcSplit(){
- const v=Math.max(0,parseInt($('vwCount').value)||0),a=Math.max(0,parseInt($('audCount').value)||0),t=v+a;
- const vp=t?Math.round(v/t*100):0,ap=t?100-vp:0;
- $('vwPct').textContent=vp+'%';$('audPct').textContent=ap+'%';$('vwBar').style.width=vp+'%';$('audBar').style.width=ap+'%';$('totalCount').textContent=t;
-}
 function getHistory(){try{return JSON.parse(localStorage.getItem('vagScanHistory')||'[]')}catch(e){return []}}
 function saveHistory(p){let h=getHistory().filter(x=>x!==p);h.unshift(p);localStorage.setItem('vagScanHistory',JSON.stringify(h.slice(0,15)));renderHistory()}
 function renderHistory(){const h=getHistory();$('historyList').innerHTML=h.length?h.map(p=>'<div class="history"><strong>'+escapeHtml(p)+'</strong><button class="secondary" onclick="useHistory(\''+p.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">Use</button></div>').join(''):'<div class="empty">No scans yet.</div>'}
