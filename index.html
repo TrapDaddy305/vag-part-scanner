@@ -27,7 +27,7 @@ footer{text-align:center;color:#748196;font-size:11px;padding:14px}
 <section class="card">
 <h2>📷 Scan a part barcode</h2>
 <div id="reader"></div>
-<div class="actions"><button id="startBtn" onclick="startScan()">Start camera</button><button class="secondary" onclick="stopScan()">Stop camera</button></div>
+<div class="actions"><button id="startBtn" onclick="startScan()">Start camera</button><button class="secondary" onclick="stopScan()">Stop camera</button></div><div class="actions"><button class="secondary" onclick="document.getElementById('photoInput').click()">📸 Take photo to scan</button></div><input id="photoInput" type="file" accept="image/*" capture="environment" hidden onchange="scanPhoto(this.files[0])">
 <p class="hint" id="cameraStatus">Allow camera access when Safari asks. Camera scanning requires HTTPS and a supported barcode.</p>
 </section>
 <section class="card">
@@ -71,7 +71,21 @@ function startScan(){
    $('partInput').value=cleanPart(decoded);$('cameraStatus').textContent='Barcode detected: '+cleanPart(decoded);stopScan();lookup();
  },()=>{}).then(()=>{scanning=true;starting=false;$('cameraStatus').textContent='Scanning continuously. Center the barcode in the wide scan area, hold steady, and move closer if needed.';}).catch(e=>{starting=false;$('cameraStatus').textContent='Camera opened but scanning could not start: '+e+'. Reload the page and allow camera access.';});
 }
-function stopScan(){starting=false;if(scanner&&scanning){scanner.stop().then(()=>{scanning=false;scanner.clear();}).catch(()=>{scanning=false;});}else if(scanner){try{scanner.clear()}catch(e){}}}
+async function stopScan(){starting=false;if(scanner&&scanning){try{await scanner.stop()}catch(e){}scanning=false;try{scanner.clear()}catch(e){}}}
+async function scanPhoto(file){
+ if(!file)return;
+ $('cameraStatus').textContent='Analyzing photo for a barcode…';
+ try{
+  if(scanning)await stopScan();
+  if(!scanner)scanner=new Html5Qrcode('reader',{verbose:false});
+  const decoded=await scanner.scanFile(file,true);
+  $('partInput').value=cleanPart(decoded);
+  $('cameraStatus').textContent='Barcode found in photo: '+cleanPart(decoded);
+  lookup();
+ }catch(e){
+  $('cameraStatus').textContent='No readable barcode found in that photo. Try again with the entire barcode visible, sharp, well lit, and filling more of the picture.';
+ }finally{$('photoInput').value='';}
+}
 function lookup(){
  const p=cleanPart($('partInput').value);if(!p){$('lookupResult').innerHTML='<p class="hint">Enter a part number first.</p>';return}
  $('partInput').value=p;
