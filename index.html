@@ -38,9 +38,10 @@ button.secondary,.linkbtn.secondary{background:#293548;color:#e6edf7;border:1px 
 <div id="lookupResult"></div>
 </section>
 <section class="card">
-<h2>📊 VW / Audi application split</h2>
-<p class="hint">Search both OEM catalogs for this exact part number. These stores can show product and fitment details when available, but they do not provide an accessible public feed of all matching vehicle applications. The app will not invent percentages from search-result counts.</p>
-<div class="result" id="catalogStatus"><div class="part">No part searched yet</div><p class="hint">Scan or enter a part number, then use the catalog search buttons below.</p></div>
+<h2>📊 Brand tendency reference</h2>
+<p class="hint">A quick, approximate guess based on the part-number prefix. It is not a verified fitment count and can be wrong, especially for shared-platform parts. Use it as a clue only.</p>
+<div class="result" id="brandEstimate"><div class="part">No estimate yet</div><p class="hint">Scan or enter a part number to see which brand the prefix leans toward.</p></div>
+<div class="result" id="catalogStatus"><div class="part">No part searched yet</div><p class="hint">Scan or enter a part number, then both OEM catalogs will be searched below.</p></div>
 <div class="catalog-embed">
 <div class="embed-head"><strong>Volkswagen catalog</strong><a id="vwCatalogLink" href="https://vw.oempartsonline.com" target="_blank" rel="noopener">Open separately ↗</a></div>
 <iframe id="vwCatalogFrame" title="Volkswagen OEM Parts Online search results" src="about:blank" loading="lazy"></iframe>
@@ -130,9 +131,30 @@ async function scanPhoto(file){
   $('photoInput').value='';
  }
 }
+function estimateBrand(part){
+ const compact=part.toUpperCase().replace(/[^A-Z0-9]/g,'');
+ const prefix=compact.slice(0,3);
+ // Prefixes commonly associated with Audi- or Volkswagen-origin engineering families.
+ const audi=['4F0','4G0','4H0','4K0','4L0','4M0','4N0','4S0','8D0','8E0','8K0','8T0','8U0','8V0','8W0','8Y0','8P0','8R0','8J0','8Z0','4E0','4Z7'];
+ const vw=['1J0','1K0','1T0','3B0','3C0','3D0','5C0','5G0','5K0','5N0','5Q0','6R0','6C0','6N0','7E0','7H0','7L0','7P0','7N0',' amar','1S0','2K0','2Q0','3G0','5WA','5TA'];
+ const shared=['1K0','3C0','5Q0','8V0','8Y0','3G0','MQB','5G0'];
+ let vwScore=50,audiScore=50,reason='No strong brand-specific prefix clue was found.';
+ if(audi.includes(prefix)&&!shared.includes(prefix)){audiScore=75;vwScore=25;reason='This prefix is commonly associated with Audi part-number families.'}
+ else if(vw.includes(prefix)&&!shared.includes(prefix)){vwScore=75;audiScore=25;reason='This prefix is commonly associated with Volkswagen part-number families.'}
+ else if(shared.includes(prefix)){vwScore=50;audiScore=50;reason='This prefix is commonly used across shared VW Group platforms or components.'}
+ else if(prefix.startsWith('4')){audiScore=60;vwScore=40;reason='A 4xx prefix is a weak Audi-leaning clue, not proof of fitment.'}
+ else if(prefix.startsWith('1')||prefix.startsWith('5')||prefix.startsWith('6')||prefix.startsWith('7')){vwScore=60;audiScore=40;reason='This prefix is a weak Volkswagen-leaning clue, not proof of fitment.'}
+ return {prefix,vwScore,audiScore,reason};
+}
+function renderBrandEstimate(part){
+ const e=estimateBrand(part);
+ const lead=e.vwScore>e.audiScore?'VW-leaning':e.audiScore>e.vwScore?'Audi-leaning':'Shared / neutral';
+ $('brandEstimate').innerHTML='<div class="part">'+lead+'</div><span class="pill">PREFIX-BASED ESTIMATE</span><div class="statrow" style="margin-top:13px"><strong style="color:#93c5fd">VW '+e.vwScore+'%</strong><strong style="color:#fbbf24">Audi '+e.audiScore+'%</strong></div><div class="bar"><div class="vwbar" style="width:'+e.vwScore+'%"></div><div class="audbar" style="width:'+e.audiScore+'%"></div></div><p class="hint">Part prefix: '+escapeHtml(e.prefix)+' · '+e.reason+' These percentages describe only the rough prefix tendency, not the number of vehicles this part fits.</p>';
+}
 function lookup(){
  const p=cleanPart($('partInput').value);if(!p){$('lookupResult').innerHTML='<p class="hint">Enter a part number first.</p>';return}
  $('partInput').value=p;
+ renderBrandEstimate(p);
  const q=encodeURIComponent('"'+p+'"');
  const vwUrl='https://vw.oempartsonline.com/search?search_str='+encodeURIComponent(p);
  const audUrl='https://audi.oempartsonline.com/search?search_str='+encodeURIComponent(p);
