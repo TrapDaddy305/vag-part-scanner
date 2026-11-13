@@ -52,19 +52,26 @@ footer{text-align:center;color:#748196;font-size:11px;padding:14px}
 <footer>Free lookup links use public search pages. Always verify part fitment by VIN and OE catalog before ordering.</footer>
 </main>
 <script>
-let scanner=null,scanning=false;
+let scanner=null,scanning=false,starting=false;
 const $=id=>document.getElementById(id);
 function cleanPart(v){return (v||'').trim().replace(/\s+/g,' ').toUpperCase()}
 function startScan(){
  if(!window.Html5Qrcode){$('cameraStatus').textContent='Scanner library did not load. Check your internet connection and reload.';return}
- if(scanning)return;
- scanner=new Html5Qrcode('reader');
- $('cameraStatus').textContent='Requesting camera access…';
- scanner.start({facingMode:'environment'},{fps:12,qrbox:{width:260,height:150},aspectRatio:1.6},decoded=>{
-   $('partInput').value=cleanPart(decoded);stopScan();lookup();
- },err=>{}).then(()=>{scanning=true;$('cameraStatus').textContent='Camera is active. Hold the barcode inside the scan frame.';}).catch(e=>{$('cameraStatus').textContent='Could not start camera: '+e+'. Open this page in Safari over HTTPS and allow camera access.';});
+ if(scanning||starting)return;
+ starting=true;
+ scanner=new Html5Qrcode('reader',{verbose:false,formatsToSupport:[
+  Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.ITF,Html5QrcodeSupportedFormats.QR_CODE
+ ]});
+ $('cameraStatus').textContent='Starting camera…';
+ const scanConfig={fps:15,qrbox:(w,h)=>({width:Math.floor(w*.94),height:Math.max(90,Math.floor(h*.32))}),aspectRatio:1.777,disableFlip:true,videoConstraints:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}};
+ scanner.start({facingMode:'environment'},scanConfig,decoded=>{
+   $('partInput').value=cleanPart(decoded);$('cameraStatus').textContent='Barcode detected: '+cleanPart(decoded);stopScan();lookup();
+ },()=>{}).then(()=>{scanning=true;starting=false;$('cameraStatus').textContent='Scanning continuously. Center the barcode in the wide scan area, hold steady, and move closer if needed.';}).catch(e=>{starting=false;$('cameraStatus').textContent='Camera opened but scanning could not start: '+e+'. Reload the page and allow camera access.';});
 }
-function stopScan(){if(scanner&&scanning){scanner.stop().then(()=>{scanning=false;scanner.clear();}).catch(()=>{scanning=false;});}else if(scanner){try{scanner.clear()}catch(e){}}}
+function stopScan(){starting=false;if(scanner&&scanning){scanner.stop().then(()=>{scanning=false;scanner.clear();}).catch(()=>{scanning=false;});}else if(scanner){try{scanner.clear()}catch(e){}}}
 function lookup(){
  const p=cleanPart($('partInput').value);if(!p){$('lookupResult').innerHTML='<p class="hint">Enter a part number first.</p>';return}
  $('partInput').value=p;
