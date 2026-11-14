@@ -52,6 +52,11 @@ button.secondary,.linkbtn.secondary{background:#293548;color:#e6edf7;border:1px 
 <div class="result" id="brandEstimate"><div class="part">No estimate yet</div><p class="hint">Scan or enter a part number. The app will show N/A unless it can verify matching US-market vehicle applications.</p></div>
 <div class="result" id="catalogStatus"><div class="part">No part searched yet</div><p class="hint">Scan or enter a part number, then both OEM catalogs will be searched below.</p></div>
 <div class="catalog-embed">
+<div class="embed-head"><strong>WebAutoCats — exact part-number lookup</strong><a id="webAutoCatsLink" href="https://webautocats.com/etka/" target="_blank" rel="noopener">Open separately ↗</a></div>
+<iframe id="webAutoCatsFrame" title="WebAutoCats exact part-number lookup" src="about:blank" loading="lazy"></iframe>
+<p class="hint">This opens the site's direct part-number record when available. Check the vehicle application list on the result page. If it blocks embedding, use “Open separately”.</p>
+</div>
+<div class="catalog-embed">
 <div class="embed-head"><strong>Volkswagen catalog</strong><a id="vwCatalogLink" href="https://vw.oempartsonline.com" target="_blank" rel="noopener">Open separately ↗</a></div>
 <iframe id="vwCatalogFrame" title="Volkswagen OEM Parts Online search results" src="about:blank" loading="lazy"></iframe>
 <p class="hint">If the catalog refuses to display inside this app, use “Open separately”.</p>
@@ -211,7 +216,11 @@ function lookup(){
  $('vwCatalogFrame').src=vwUrl;
  $('audCatalogFrame').src=audUrl;
  $('catalogStatus').innerHTML='<div class="part">'+escapeHtml(p)+'</div><span class="pill">OEM CATALOG SEARCH READY</span><p class="hint">Open either catalog to inspect matching products and any published fitment details. Catalog results are not automatically counted as vehicle applications.</p>';
+ const webAutoCatsUrl='https://webautocats.com/etka/part/'+encodeURIComponent(p.replace(/[^a-zA-Z0-9]/g,'').toLowerCase());
+ $('webAutoCatsLink').href=webAutoCatsUrl;
+ $('webAutoCatsFrame').src=webAutoCatsUrl;
  const links=[
+  ['WebAutoCats — exact part applications',webAutoCatsUrl],
   ['VW OEM Parts Online',vwUrl],
   ['Audi OEM Parts Online',audUrl],
   ['Google — exact part (US)','https://www.google.com/search?gl=us&hl=en&q='+q],
