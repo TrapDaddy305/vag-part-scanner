@@ -38,40 +38,21 @@ button.secondary,.linkbtn.secondary{background:#293548;color:#e6edf7;border:1px 
 <div id="lookupResult"></div>
 </section>
 <section class="card">
-<h2>🔑 Connect plan.parts VAG ETKA</h2>
-<p class="hint">Add your own API key to enable automatic full-part-number vehicle lookups. Your key is kept in this browser only; it is not written into the public GitHub app.</p>
+<h2>🧭 Part brand identification</h2>
+<p class="hint">One lookup. Search the complete part number and get one result: VW, AUDI, BOTH, or NEITHER.</p>
+<details id="apiSetup">
+<summary>API setup</summary>
 <label for="planPartsKey">plan.parts API key</label>
-<input id="planPartsKey" type="password" placeholder="Paste your API key" autocomplete="off">
-<div class="actions"><button onclick="savePlanPartsKey()">Save key on this device</button><button class="secondary" onclick="clearPlanPartsKey()">Clear key</button></div>
-<p class="hint" id="apiKeyStatus">No API key saved. Create a free account at plan.parts, generate an API key, and paste it here.</p>
-<a class="linkbtn secondary" href="https://www.plan.parts/" target="_blank" rel="noopener">Create free plan.parts account ↗</a>
-</section>
-<section class="card">
-<h2>📊 VAG catalog fitment rating</h2>
-<p class="hint"><strong>Important market limitation:</strong> the documented ETKA vehicle-lookup response identifies VW/Audi catalog applications, model names, and year ranges, but does not include a country/market field. The rating below is therefore a catalog application split, <strong>not a verified US-only fitment percentage</strong>. Do not treat it as proof of US-market fitment.</p>
-<div class="result" id="brandEstimate"><div class="part">No estimate yet</div><p class="hint">Scan or enter a part number. The app will show N/A unless it can verify matching US-market vehicle applications.</p></div>
-<div class="result" id="catalogStatus"><div class="part">No part searched yet</div><p class="hint">Scan or enter a part number, then both OEM catalogs will be searched below.</p></div>
-<div class="catalog-embed">
-<div class="embed-head"><strong>WebAutoCats — exact part-number lookup</strong><a id="webAutoCatsLink" href="https://webautocats.com/etka/" target="_blank" rel="noopener">Open separately ↗</a></div>
-<iframe id="webAutoCatsFrame" title="WebAutoCats exact part-number lookup" src="about:blank" loading="lazy"></iframe>
-<p class="hint">This opens the site's direct part-number record when available. Check the vehicle application list on the result page. If it blocks embedding, use “Open separately”.</p>
+<input id="planPartsKey" type="password" placeholder="Paste API key" autocomplete="off">
+<div class="actions"><button onclick="savePlanPartsKey()">Save key</button><button class="secondary" onclick="clearPlanPartsKey()">Clear key</button></div>
+<p class="hint" id="apiKeyStatus">No API key saved.</p>
+<a href="https://www.plan.parts/" target="_blank" rel="noopener">Get a plan.parts key ↗</a>
+</details>
+<div class="result" id="brandEstimate" aria-live="polite">
+<div class="part">Ready to identify</div>
+<p class="hint">Scan a barcode or enter a part number above, then tap Search part.</p>
 </div>
-<div class="catalog-embed">
-<div class="embed-head"><strong>Volkswagen catalog</strong><a id="vwCatalogLink" href="https://vw.oempartsonline.com" target="_blank" rel="noopener">Open separately ↗</a></div>
-<iframe id="vwCatalogFrame" title="Volkswagen OEM Parts Online search results" src="about:blank" loading="lazy"></iframe>
-<p class="hint">If the catalog refuses to display inside this app, use “Open separately”.</p>
-</div>
-<div class="catalog-embed">
-<div class="embed-head"><strong>Audi catalog</strong><a id="audCatalogLink" href="https://audi.oempartsonline.com" target="_blank" rel="noopener">Open separately ↗</a></div>
-<iframe id="audCatalogFrame" title="Audi OEM Parts Online search results" src="about:blank" loading="lazy"></iframe>
-<p class="hint">Some catalog websites block embedded viewing. This app will still try both searches automatically.</p>
-</div>
-<div class="statrow"><span>VW application source</span><strong>plan.parts / VAG ETKA</strong></div>
-<div class="statrow"><span>Audi application source</span><strong>plan.parts / VAG ETKA</strong></div>
-<p class="hint">The API response currently documents catalog, vehicle name, and year range, but no country field. The app therefore cannot filter US-only applications yet. Keep the US OEM catalog links below for separate market verification.</p>
-</section>
-<section class="card">
-<h2>🕘 Recent scans</h2><div id="historyList" class="empty">No scans yet.</div><div class="actions"><button class="secondary" onclick="clearHistory()">Clear history</button></div>
+<p class="hint">Source: plan.parts VAG ETKA catalog. Its documented response does not identify US-market-only applications, so this is a catalog brand classification, not a US-market guarantee.</p>
 </section>
 <footer>Free lookup links use public search pages. Always verify part fitment by VIN and OE catalog before ordering.</footer>
 </main>
@@ -95,153 +76,49 @@ async function startScan(){
   if(scanner){try{scanner.clear()}catch(e){}scanner=null}
   scanner=makeScanner('reader');
   $('cameraStatus').textContent='Requesting access to the rear camera…';
-  await scanner.start(
-   {facingMode:'environment'},
+  await scanner.start({facingMode:'environment'},
    {fps:20,qrbox:(w,h)=>({width:Math.floor(w*.96),height:Math.max(110,Math.floor(h*.42))}),aspectRatio:1.777,disableFlip:false,videoConstraints:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}},
-   decoded=>{
-    const value=cleanPart(decoded);
-    $('partInput').value=value;
-    $('cameraStatus').textContent='Barcode detected: '+value;
-    stopScan();
-    lookup();
-   },
-   ()=>{}
-  );
+   decoded=>{const value=cleanPart(decoded);$('partInput').value=value;$('cameraStatus').textContent='Barcode detected: '+value;stopScan();lookup();},()=>{});
   scanning=true;starting=false;
-  $('cameraStatus').textContent='Live scanning is active. Keep the full barcode in view and move closer until it is sharp.';
- }catch(e){
-  starting=false;scanning=false;
-  $('cameraStatus').textContent='Could not start camera: '+(e.message||e)+'. Confirm Safari camera permission and that you opened the HTTPS app address.';
-  try{if(scanner)scanner.clear()}catch(err){}
-  scanner=null;
- }
+  $('cameraStatus').textContent='Live scanning is active. Keep the full barcode in view until it is sharp.';
+ }catch(e){starting=false;scanning=false;$('cameraStatus').textContent='Could not start camera: '+(e.message||e)+'. Confirm Safari camera permission and HTTPS.';try{if(scanner)scanner.clear()}catch(err){}scanner=null}
 }
-async function stopScan(){
- starting=false;
- if(scanner){
-  if(scanning){try{await scanner.stop()}catch(e){}}
-  scanning=false;
-  try{scanner.clear()}catch(e){}
-  scanner=null;
- }else scanning=false;
-}
+async function stopScan(){starting=false;if(scanner){if(scanning){try{await scanner.stop()}catch(e){}}scanning=false;try{scanner.clear()}catch(e){}scanner=null}else scanning=false}
 async function scanPhoto(file){
  if(!file)return;
  $('cameraStatus').textContent='Analyzing photo for a barcode…';
- try{
-  await stopScan();
-  if(!window.Html5Qrcode)throw new Error('Photo scanner library unavailable');
-  photoScanner=new Html5Qrcode('photoReader',{verbose:false});
-  const decoded=await photoScanner.scanFile(file,true);
-  const value=cleanPart(decoded);
-  $('partInput').value=value;
-  $('cameraStatus').textContent='Barcode found in photo: '+value;
-  lookup();
- }catch(e){
-  $('cameraStatus').textContent='No readable barcode found in that photo. Try again with the entire barcode visible, sharp, well lit, and filling more of the picture.';
- }finally{
-  try{if(photoScanner)photoScanner.clear()}catch(e){}
-  photoScanner=null;
-  $('photoInput').value='';
- }
+ try{await stopScan();if(!window.Html5Qrcode)throw new Error('Photo scanner library unavailable');photoScanner=new Html5Qrcode('photoReader',{verbose:false});const decoded=await photoScanner.scanFile(file,true);const value=cleanPart(decoded);$('partInput').value=value;$('cameraStatus').textContent='Barcode found in photo: '+value;lookup()}
+ catch(e){$('cameraStatus').textContent='No readable barcode found. Try a sharp, well-lit photo with the entire barcode visible.'}
+ finally{try{if(photoScanner)photoScanner.clear()}catch(e){}photoScanner=null;$('photoInput').value=''}
 }
-function savePlanPartsKey(){
- const key=$('planPartsKey').value.trim();
- if(!key){$('apiKeyStatus').textContent='Paste your API key first.';return}
- localStorage.setItem('planPartsApiKey',key);
- $('planPartsKey').value='';
- $('apiKeyStatus').textContent='API key saved on this device. It is not stored in the GitHub source.';
-}
-function clearPlanPartsKey(){
- localStorage.removeItem('planPartsApiKey');
- $('planPartsKey').value='';
- $('apiKeyStatus').textContent='API key cleared from this device.';
-}
-function loadPlanPartsKeyStatus(){
- const key=localStorage.getItem('planPartsApiKey');
- $('apiKeyStatus').textContent=key?'API key saved on this device. Ready for automatic lookups.':'No API key saved. Create a free account, generate an API key, and paste it here.';
-}
+function savePlanPartsKey(){const key=$('planPartsKey').value.trim();if(!key){$('apiKeyStatus').textContent='Paste your API key first.';return}localStorage.setItem('planPartsApiKey',key);$('planPartsKey').value='';$('apiKeyStatus').textContent='API key saved on this device.'}
+function clearPlanPartsKey(){localStorage.removeItem('planPartsApiKey');$('planPartsKey').value='';$('apiKeyStatus').textContent='API key cleared.'}
 async function renderBrandEstimate(part){
  const key=localStorage.getItem('planPartsApiKey');
- if(!key){
-  $('brandEstimate').innerHTML='<div class="part">N/A</div><span class="pill">API KEY REQUIRED</span><p class="hint">Enter and save your plan.parts API key above. Then search the complete part number again to retrieve its vehicle applications.</p>';
-  return;
- }
- $('brandEstimate').innerHTML='<div class="part">Checking ETKA…</div><p class="hint">Looking up the complete part number in the VAG catalog.</p>';
+ if(!key){$('brandEstimate').innerHTML='<div class="part">API KEY NEEDED</div><p class="hint">Open API setup above and save your plan.parts key. Then search again.</p>';return}
+ $('brandEstimate').innerHTML='<div class="part">Checking '+escapeHtml(part)+'…</div><p class="hint">Searching the VAG ETKA vehicle applications.</p>';
  try{
-  const endpoint='https://cdn.plan.parts/api/v1/vag/part/'+encodeURIComponent(part)+'/vehicles';
+  const endpoint='https://cdn.plan.parts/api/v1/vag/part/'+encodeURIComponent(part.replace(/\s+/g,''))+'/vehicles';
   const response=await fetch(endpoint,{method:'GET',headers:{'Authorization':'Bearer '+key,'Accept':'application/json'}});
-  let payload={};
-  try{payload=await response.json()}catch(e){}
-  if(!response.ok){
-   const detail=payload.message||payload.error||('HTTP '+response.status);
-   throw new Error(detail);
-  }
-  const raw=Array.isArray(payload.data)?payload.data:[];
-  const unique=new Map();
-  raw.forEach(v=>{
-   const catalog=String(v.catalog||'').trim().toUpperCase();
-   const brand=(catalog==='VW'||catalog==='VOLKSWAGEN')?'VW':((catalog==='AU'||catalog==='AUDI')?'AUDI':null);
-   if(!brand)return;
-   const id=String(v.epis_typ||[catalog,v.name,v.year_from,v.year_to].join('|'));
-   if(!unique.has(id))unique.set(id,{brand,name:String(v.name||'Vehicle application'),from:String(v.year_from||''),to:String(v.year_to||'')});
-  });
-  const apps=Array.from(unique.values());
-  const vw=apps.filter(v=>v.brand==='VW');
-  const audi=apps.filter(v=>v.brand==='AUDI');
-  const total=vw.length+audi.length;
-  if(!total){
-   $('brandEstimate').innerHTML='<div class="part">N/A</div><span class="pill">NO VW/AUDI APPLICATIONS RETURNED</span><p class="hint">The API returned no recognizable VW or Audi vehicle applications for '+escapeHtml(part)+'. No percentage has been guessed. Check the number and catalog response.</p>';
-   return;
-  }
-  const vwPct=Math.round(vw.length/total*100);
-  const audiPct=100-vwPct;
-  const list=arr=>arr.length?arr.map(v=>'<li>'+escapeHtml(v.name)+(v.from||v.to?' ('+escapeHtml(v.from||'?')+'–'+escapeHtml(v.to||'?')+')':'')+'</li>').join(''):'<li>None returned</li>';
-  $('brandEstimate').innerHTML='<div class="part">'+vwPct+'% VW / '+audiPct+'% Audi</div><span class="pill">LIVE ETKA CATALOG RESULTS</span><div class="bar"><div class="vwbar" style="width:'+vwPct+'%"></div><div class="audbar" style="width:'+audiPct+'%"></div></div><div class="statrow"><span>Volkswagen applications</span><strong>'+vw.length+'</strong></div><div class="statrow"><span>Audi applications</span><strong>'+audi.length+'</strong></div><p class="hint">Based on '+total+' distinct vehicle application records returned for the complete part number. This is an application-count split, not proof of US-only fitment or a measure of sales/vehicle population.</p><details><summary>View returned vehicle applications</summary><strong>Volkswagen</strong><ul>'+list(vw)+'</ul><strong>Audi</strong><ul>'+list(audi)+'</ul></details>';
+  let payload={};try{payload=await response.json()}catch(e){}
+  if(!response.ok)throw new Error(payload.message||payload.error||('HTTP '+response.status));
+  if(payload.success!==true||!Array.isArray(payload.data))throw new Error('The catalog returned an incomplete response.');
+  const vw=payload.data.some(v=>['VW','VOLKSWAGEN'].includes(String(v.catalog||'').toUpperCase()));
+  const audi=payload.data.some(v=>['AU','AUDI'].includes(String(v.catalog||'').toUpperCase()));
+  const result=vw&&audi?'BOTH':vw?'VW':audi?'AUDI':'NEITHER';
+  const matching=payload.data.filter(v=>['VW','VOLKSWAGEN','AU','AUDI'].includes(String(v.catalog||'').toUpperCase()));
+  const vehicles=matching.slice(0,8).map(v=>'<li>'+(String(v.catalog).toUpperCase()==='AU'||String(v.catalog).toUpperCase()==='AUDI'?'Audi':'Volkswagen')+' — '+escapeHtml(v.name||'Vehicle')+(v.year_from||v.year_to?' ('+escapeHtml(v.year_from||'?')+'–'+escapeHtml(v.year_to||'?')+')':'')+'</li>').join('');
+  $('brandEstimate').innerHTML='<div class="part" style="font-size:32px">'+result+'</div><span class="pill">ETKA CATALOG RESULT</span><p class="hint">'+(matching.length?matching.length+' matching VW/Audi vehicle application record(s).':'No VW or Audi applications were returned for this part number.')+'</p>'+(vehicles?'<details><summary>See matching vehicles</summary><ul>'+vehicles+'</ul></details>':'');
  }catch(e){
   const msg=String(e.message||e);
-  const cors=/fetch|network|cors/i.test(msg);
-  $('brandEstimate').innerHTML='<div class="part">N/A</div><span class="pill">LOOKUP NOT COMPLETED</span><p class="hint">'+(cors?'The browser could not reach the API. This may be a CORS restriction or network issue. The provider may need to enable browser-origin requests or the app will need a small secure backend.':'The API request failed: '+escapeHtml(msg))+'. No percentage was guessed. Verify your API key and available token balance.</p>';
+  $('brandEstimate').innerHTML='<div class="part">LOOKUP FAILED</div><p class="hint">'+(/fetch|network|cors/i.test(msg)?'Could not connect to the API. This may be a CORS restriction; a secure backend or provider-side browser access may be required.':escapeHtml(msg))+'</p><p class="hint">No brand result was guessed.</p>';
  }
 }
-function lookup(){
- const p=cleanPart($('partInput').value);if(!p){$('lookupResult').innerHTML='<p class="hint">Enter a part number first.</p>';return}
- $('partInput').value=p;
- renderBrandEstimate(p);
- const q=encodeURIComponent('"'+p+'"');
- const vwUrl='https://vw.oempartsonline.com/search?search_str='+encodeURIComponent(p);
- const audUrl='https://audi.oempartsonline.com/search?search_str='+encodeURIComponent(p);
- $('vwCatalogLink').href=vwUrl;$('audCatalogLink').href=audUrl;
- // Load both OEM searches inside the app so the user can stay on this screen.
- $('vwCatalogFrame').src=vwUrl;
- $('audCatalogFrame').src=audUrl;
- $('catalogStatus').innerHTML='<div class="part">'+escapeHtml(p)+'</div><span class="pill">OEM CATALOG SEARCH READY</span><p class="hint">Open either catalog to inspect matching products and any published fitment details. Catalog results are not automatically counted as vehicle applications.</p>';
- const webAutoCatsUrl='https://webautocats.com/etka/part/'+encodeURIComponent(p.replace(/[^a-zA-Z0-9]/g,'').toLowerCase());
- $('webAutoCatsLink').href=webAutoCatsUrl;
- $('webAutoCatsFrame').src=webAutoCatsUrl;
- const links=[
-  ['WebAutoCats — exact part applications',webAutoCatsUrl],
-  ['VW OEM Parts Online',vwUrl],
-  ['Audi OEM Parts Online',audUrl],
-  ['Google — exact part (US)','https://www.google.com/search?gl=us&hl=en&q='+q],
-  ['ECS Tuning','https://www.google.com/search?q=site%3Aecstuning.com+'+encodeURIComponent(p)],
-  ['UroTuning','https://www.google.com/search?q=site%3Aurotuning.com+'+encodeURIComponent(p)],
-  ['US-market VW / Audi search','https://www.google.com/search?gl=us&hl=en&q='+encodeURIComponent(p+' Volkswagen Audi US market OEM fitment')],
-  ['Google Images','https://www.google.com/search?tbm=isch&q='+encodeURIComponent(p)]
- ];
- $('lookupResult').innerHTML='<div class="result"><div class="part">'+escapeHtml(p)+'</div><span class="pill">SEARCH LINKS READY</span><div class="grid" style="margin-top:13px">'+links.map(([name,url])=>'<a class="linkbtn secondary" target="_blank" rel="noopener" href="'+url+'">'+name+'</a>').join('')+'</div><p class="hint">These open free public search results. They are not live catalog verification or guaranteed fitment results.</p></div>';
- saveHistory(p);
-}
-function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function clearInput(){$('partInput').value='';$('lookupResult').innerHTML=''}
-function getHistory(){try{return JSON.parse(localStorage.getItem('vagScanHistory')||'[]')}catch(e){return []}}
-function saveHistory(p){let h=getHistory().filter(x=>x!==p);h.unshift(p);localStorage.setItem('vagScanHistory',JSON.stringify(h.slice(0,15)));renderHistory()}
-function renderHistory(){const h=getHistory();$('historyList').innerHTML=h.length?h.map(p=>'<div class="history"><strong>'+escapeHtml(p)+'</strong><button class="secondary" onclick="useHistory(\''+p.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">Use</button></div>').join(''):'<div class="empty">No scans yet.</div>'}
-function useHistory(p){$('partInput').value=p;lookup()}
-function clearHistory(){localStorage.removeItem('vagScanHistory');renderHistory()}
+function lookup(){const p=cleanPart($('partInput').value);if(!p){$('brandEstimate').innerHTML='<div class="part">Enter a part number</div>';return}$('partInput').value=p;renderBrandEstimate(p)}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function clearInput(){$('partInput').value='';$('brandEstimate').innerHTML='<div class="part">Ready to identify</div><p class="hint">Scan or enter a part number.</p>'}
 $('partInput').addEventListener('keydown',e=>{if(e.key==='Enter')lookup()});
-renderHistory();
-if(localStorage.getItem('planPartsApiKey'))$('apiKeyStatus').textContent='API key saved on this device. Ready for automatic lookups.';
+if(localStorage.getItem('planPartsApiKey'))$('apiKeyStatus').textContent='API key saved on this device.';
 </script>
 </body>
 </html>
