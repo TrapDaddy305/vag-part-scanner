@@ -38,9 +38,9 @@ button.secondary,.linkbtn.secondary{background:#293548;color:#e6edf7;border:1px 
 <div id="lookupResult"></div>
 </section>
 <section class="card">
-<h2>📊 Brand tendency reference</h2>
-<p class="hint">A quick, approximate guess based on the part-number prefix. It is not a verified fitment count and can be wrong, especially for shared-platform parts. Use it as a clue only.</p>
-<div class="result" id="brandEstimate"><div class="part">No estimate yet</div><p class="hint">Scan or enter a part number to see which brand the prefix leans toward.</p></div>
+<h2>📊 US-market fitment reference</h2>
+<p class="hint"><strong>Market scope: United States only.</strong> The VW and Audi OEM Parts Online searches below use their US-market dealer catalogs. Do not count Europe, UK, ROW, or other international-market applications as US fitment. The brand tendency below is only a rough part-prefix clue; it is not a vehicle-fitment calculation.</p>
+<div class="result" id="brandEstimate"><div class="part">No estimate yet</div><p class="hint">Scan or enter a part number to see a rough brand-prefix clue. It does not identify US vehicle applications.</p></div>
 <div class="result" id="catalogStatus"><div class="part">No part searched yet</div><p class="hint">Scan or enter a part number, then both OEM catalogs will be searched below.</p></div>
 <div class="catalog-embed">
 <div class="embed-head"><strong>Volkswagen catalog</strong><a id="vwCatalogLink" href="https://vw.oempartsonline.com" target="_blank" rel="noopener">Open separately ↗</a></div>
@@ -52,9 +52,9 @@ button.secondary,.linkbtn.secondary{background:#293548;color:#e6edf7;border:1px 
 <iframe id="audCatalogFrame" title="Audi OEM Parts Online search results" src="about:blank" loading="lazy"></iframe>
 <p class="hint">Some catalog websites block embedded viewing. This app will still try both searches automatically.</p>
 </div>
-<div class="statrow"><span>VW catalog coverage</span><strong>USA</strong></div>
-<div class="statrow"><span>Audi catalog coverage</span><strong>USA</strong></div>
-<p class="hint">Percentages will remain unavailable until the catalogs expose verified vehicle-application records that can be retrieved automatically.</p>
+<div class="statrow"><span>VW fitment source</span><strong>US dealer catalog</strong></div>
+<div class="statrow"><span>Audi fitment source</span><strong>US dealer catalog</strong></div>
+<p class="hint">Only US-market model applications should be counted in any future fitment percentage. The current app opens both US catalogs for manual review; it does not yet extract or count vehicle applications automatically.</p>
 </section>
 <section class="card">
 <h2>🕘 Recent scans</h2><div id="historyList" class="empty">No scans yet.</div><div class="actions"><button class="secondary" onclick="clearHistory()">Clear history</button></div>
@@ -166,10 +166,10 @@ function lookup(){
  const links=[
   ['VW OEM Parts Online',vwUrl],
   ['Audi OEM Parts Online',audUrl],
-  ['Google — exact part','https://www.google.com/search?q='+q],
+  ['Google — exact part (US)','https://www.google.com/search?gl=us&hl=en&q='+q],
   ['ECS Tuning','https://www.google.com/search?q=site%3Aecstuning.com+'+encodeURIComponent(p)],
   ['UroTuning','https://www.google.com/search?q=site%3Aurotuning.com+'+encodeURIComponent(p)],
-  ['VW / Audi catalog search','https://www.google.com/search?q='+encodeURIComponent(p+' Volkswagen Audi OEM parts')],
+  ['US-market VW / Audi search','https://www.google.com/search?gl=us&hl=en&q='+encodeURIComponent(p+' Volkswagen Audi US market OEM fitment')],
   ['Google Images','https://www.google.com/search?tbm=isch&q='+encodeURIComponent(p)]
  ];
  $('lookupResult').innerHTML='<div class="result"><div class="part">'+escapeHtml(p)+'</div><span class="pill">SEARCH LINKS READY</span><div class="grid" style="margin-top:13px">'+links.map(([name,url])=>'<a class="linkbtn secondary" target="_blank" rel="noopener" href="'+url+'">'+name+'</a>').join('')+'</div><p class="hint">These open free public search results. They are not live catalog verification or guaranteed fitment results.</p></div>';
